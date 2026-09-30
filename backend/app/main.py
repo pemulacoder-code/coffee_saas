@@ -1,5 +1,6 @@
 from fastapi import FastAPI
 
+from app.api.health import router as health_router
 from app.core.config import settings
 
 
@@ -15,3 +16,6 @@ async def root() -> dict[str, str]:
         "message": "Coffee SaaS API",
         "environment": settings.app_env,
     }
+
+
+app.include_router(health_router)
