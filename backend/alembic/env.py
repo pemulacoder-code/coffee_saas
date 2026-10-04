@@ -12,6 +12,7 @@ sys.path.insert(0, str(BACKEND_DIR))
 
 from app.core.config import settings
 from app.db.base import Base
+import app.models
 
 
 config = context.config
