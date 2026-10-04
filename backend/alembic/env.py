@@ -1,7 +1,14 @@
 from logging.config import fileConfig
+from pathlib import Path
+import sys
 
 from alembic import context
 from sqlalchemy import engine_from_config, pool
+
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
+BACKEND_DIR = PROJECT_ROOT / "backend"
+
+sys.path.insert(0, str(BACKEND_DIR))
 
 from app.core.config import settings
 from app.db.base import Base
@@ -18,6 +25,7 @@ config.set_main_option(
     "sqlalchemy.url",
     database_url.replace("%", "%%"),
 )
+
 
 if config.config_file_name is not None:
     fileConfig(config.config_file_name)
