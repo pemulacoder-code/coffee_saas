@@ -14,3 +14,6 @@ redis
 pytest
 pytest-asyncio
 httpx
+
+pwdlib
+PyJwt
