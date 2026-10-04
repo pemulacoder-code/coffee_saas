@@ -1,8 +1,9 @@
 fastapi
 uvicorn[standard]
 
-sqlalchemy
+sqlalchemy[asyncio]
 asyncpg
+psycopg[binary]
 alembic
 
 pydantic
