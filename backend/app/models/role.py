@@ -45,6 +45,7 @@ class Role(BaseModel):
 
     permissions: Mapped[list["RolePermission"]] = relationship(
         back_populates="role",
+        cascade="all, delete-orphan",
     )
 
     organization_memberships: Mapped[
