@@ -11,17 +11,17 @@ from app.core.tenant import TenantContext
 from app.db.session import get_db_session
 from app.models.organization import Organization
 from app.models.organization_membership import OrganizationMembership
+from app.models.permission import Permission
+from app.models.role import Role
+from app.models.role_permission import RolePermission
 from app.models.user import User
-from app.services.auth import get_user_by_email
 
 
 bearer_scheme = HTTPBearer()
 
 
 async def get_current_user(
-    credentials: HTTPAuthorizationCredentials = Depends(
-        bearer_scheme
-    ),
+    credentials: HTTPAuthorizationCredentials = Depends(bearer_scheme),
     session: AsyncSession = Depends(get_db_session),
 ) -> User:
     """Return the authenticated user from the access token."""
@@ -106,3 +106,62 @@ async def get_current_tenant(
     return TenantContext(
         organization_id=organization_id,
     )
+
+
+def require_permission(permission_code: str):
+    async def dependency(
+        tenant: TenantContext = Depends(get_current_tenant),
+        current_user: User = Depends(get_current_user),
+        session: AsyncSession = Depends(get_db_session),
+    ) -> OrganizationMembership:
+        """Require a permission for the current user in the current tenant."""
+
+        membership = await session.scalar(
+            select(OrganizationMembership).where(
+                OrganizationMembership.user_id == current_user.id,
+                OrganizationMembership.organization_id == tenant.organization_id,
+                OrganizationMembership.is_active.is_(True),
+            )
+        )
+
+        if membership is None:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="User is not a member of this organization",
+            )
+
+        role = await session.scalar(
+            select(Role).where(
+                Role.id == membership.role_id,
+                Role.is_active.is_(True),
+            )
+        )
+
+        if role is None:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Permission denied",
+            )
+
+        permission = await session.scalar(
+            select(Permission)
+            .join(
+                RolePermission,
+                RolePermission.permission_id == Permission.id,
+            )
+            .where(
+                RolePermission.role_id == role.id,
+                Permission.code == permission_code,
+                Permission.is_active.is_(True),
+            )
+        )
+
+        if permission is None:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Permission denied",
+            )
+
+        return membership
+
+    return dependency
